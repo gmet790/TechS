@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6f5c">
+<title>Καταγραφή εργασιών</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+<style>
+:root{--bg:#f5f6f4;--surf:#fff;--ink:#1d2421;--mute:#66706b;--line:#dde1de;--acc:#1f6f5c;--acc-ink:#fff;--sel:#e3f1ec;--err:#b3261e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#151a18;--surf:#1e2522;--ink:#e8ece9;--mute:#98a39d;--line:#323b37;--acc:#4fb79d;--acc-ink:#0d1512;--sel:#23372f;--err:#f2b8b5;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.page{max-width:940px;margin:0 auto;padding:14px 16px 32px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:4px}
+h1{font-size:20px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 8px;font-weight:650}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:16px;margin-top:12px}
+.tabs{display:flex;gap:4px;margin-top:10px}
+.tabs button{border:1px solid var(--line);background:transparent;color:var(--ink);padding:9px 16px;border-radius:6px;cursor:pointer;font:inherit}
+.tabs button.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;min-width:0;width:100%}
+input[type=checkbox]{width:auto}
+textarea{resize:vertical}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+label{display:block;margin:10px 0 3px;color:var(--mute);font-size:13px}
+.btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:6px;padding:9px 16px;cursor:pointer;font:inherit;font-weight:600}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.file input{display:none}
+.file{display:inline-block}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.fg .w{grid-column:1/-1}
+@media(max-width:620px){.fg{grid-template-columns:1fr}.page{padding:10px 12px 28px}}
+.row{display:flex;gap:6px}
+.row .btn{white-space:nowrap}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.mute{color:var(--mute)}
+.note{font-size:13px;color:var(--mute);margin-top:8px}
+#msg,#msg2{margin-top:8px;font-size:14px;color:var(--acc)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.bar>div{flex:1 1 140px}
+.bar label{margin-top:0}
+.day{margin:16px 0 2px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:650;border-bottom:2px solid var(--acc);padding-bottom:4px}
+.day label{display:flex;gap:8px;align-items:center;margin:0;color:var(--ink);font-size:15px}
+.en{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start}
+.en input[type=checkbox],.day input[type=checkbox]{width:20px;height:20px}
+.en .t{font-weight:600}
+.en .d{margin-top:2px;white-space:pre-wrap}
+.en .ac{display:flex}
+.en .ac button{background:none;border:0;cursor:pointer;font-size:18px;color:var(--mute);padding:4px 8px}
+.empty{padding:22px;text-align:center;color:var(--mute)}
+#pv{margin-top:10px}
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <h1>Καταγραφή εργασιών</h1>
+  <label class="btn sec file" style="margin:0">Φόρτωση εξοπλισμού (.xlsx)<input type="file" id="fi" accept=".xlsx,.xls"></label>
+</header>
+<div class="note" id="st" style="margin:0"></div>
+<div class="tabs"><button id="t1" class="on">Νέα καταχώρηση</button><button id="t2">Ιστορικό</button></div>
+
+<section class="card" id="v1">
+  <h2 id="ft">Νέα καταχώρηση</h2>
+  <div class="fg">
+    <div><label for="cu">Πελάτης</label><input id="cu" list="dc" autocomplete="off" placeholder="Πληκτρολογήστε ή επιλέξτε"></div>
+    <div><label for="eq">Εξοπλισμός</label><input id="eq" list="de" autocomplete="off"></div>
+    <div><label for="sn">Αρ. σειράς (ΑΣ)</label><input id="sn" list="dsn" autocomplete="off"></div>
+    <div><label for="dt">Αρ. ΔΤΕ (προαιρετικό)</label><input id="dt" autocomplete="off"></div>
+    <div class="w"><label for="kd">Τύπος παρέμβασης</label>
+      <select id="kd"><option value="">Επιλέξτε…</option><option>Τηλεφωνική κλήση</option><option>Επίσκεψη</option><option>Απομακρυσμένη πρόσβαση</option><option>Εργασίες εντός</option><option>Εργασίες εκτός</option></select></div>
+    <div><label for="st1">Έναρξη εργασίας</label><div class="row"><input type="datetime-local" id="st1"><button class="btn sec" id="n1" type="button">Τώρα</button></div></div>
+    <div><label for="en1">Λήξη εργασίας</label><div class="row"><input type="datetime-local" id="en1"><button class="btn sec" id="n2" type="button">Τώρα</button></div></div>
+    <div class="w note" id="du"></div>
+    <div class="w"><label for="ds">Περιγραφή</label><textarea id="ds" rows="5"></textarea></div>
+  </div>
+  <datalist id="dc"></datalist><datalist id="de"></datalist><datalist id="dsn"></datalist>
+  <div class="acts">
+    <button class="btn" id="sv">Αποθήκευση</button>
+    <button class="btn sec" id="cl">Καθαρισμός</button>
+    <button class="btn sec" id="ce" hidden>Ακύρωση επεξεργασίας</button>
+  </div>
+  <div id="msg"></div>
+</section>
+
+<section class="card" id="v2" hidden>
+  <h2>Ιστορικό</h2>
+  <div class="bar">
+    <div><label for="hf">Από</label><input type="date" id="hf"></div>
+    <div><label for="ht">Έως</label><input type="date" id="ht"></div>
+    <div style="flex:2 1 200px"><label for="hq">Αναζήτηση</label><input type="search" id="hq" placeholder="Πελάτης, εξοπλισμός, ΑΣ, ΔΤΕ…"></div>
+  </div>
+  <div class="acts" style="margin-top:10px;align-items:center">
+    <button class="btn sec" id="sa">Επιλογή όλων (ορατών)</button>
+    <button class="btn sec" id="sn0">Καθαρισμός επιλογής</button>
+    <span class="mute" id="sc"></span>
+  </div>
+  <div id="hl"></div>
+
+  <h2 style="margin-top:22px">Αποστολή με email</h2>
+  <div class="fg">
+    <div><label for="to">Παραλήπτης</label><input id="to" type="email" placeholder="onoma@etaireia.gr"></div>
+    <div><label for="nm">Υπογραφή (όνομα)</label><input id="nm"></div>
+    <div class="w"><label for="ol">Το Outlook μου</label><select id="ol"><option value="c">Κλασικό (desktop)</option><option value="n">Νέο / web</option></select></div>
+  </div>
+  <div class="acts">
+    <button class="btn" id="em">Δημιουργία email</button>
+    <button class="btn sec" id="sh">Κοινοποίηση</button>
+    <button class="btn sec" id="cp">Αντιγραφή κειμένου</button>
+  </div>
+  <div id="msg2"></div>
+  <textarea id="pv" rows="10" readonly hidden></textarea>
+  <div class="note">Οι επιλεγμένες καταχωρήσεις μπαίνουν στο email ανά ημέρα και με χρονολογική σειρά.</div>
+
+  <h2 style="margin-top:22px">Αντίγραφο ασφαλείας</h2>
+  <div class="acts" style="margin-top:0">
+    <button class="btn sec" id="bk">Λήψη αντιγράφου (.json)</button>
+    <label class="btn sec file" style="margin:0">Επαναφορά από αντίγραφο<input type="file" id="rs" accept=".json,application/json"></label>
+  </div>
+  <div id="msg3"></div>
+  <div class="note">Η επαναφορά προσθέτει τις καταχωρήσεις του αρχείου στις υπάρχουσες, χωρίς να σβήνει τίποτα. Χρησιμοποιήστε την και για μεταφορά ιστορικού σε άλλη συσκευή.</div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm=s=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ς/g,'σ');
+const P=n=>String(n).padStart(2,'0');
+const toL=d=>d.getFullYear()+'-'+P(d.getMonth()+1)+'-'+P(d.getDate())+'T'+P(d.getHours())+':'+P(d.getMinutes());
+const dayOf=s=>s.slice(0,10);
+const hm=s=>s.slice(11,16);
+const dmy=k=>k.slice(8,10)+'/'+k.slice(5,7)+'/'+k.slice(0,4);
+const fmtDay=k=>new Date(k+'T12:00').toLocaleDateString('el-GR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+const mins=e=>e.end?Math.max(0,Math.round((new Date(e.end)-new Date(e.start))/60000)):null;
+const dur=m=>{if(m==null)return'';const h=Math.floor(m/60),r=m%60;return (h?h+'ω':'')+(h&&r?' ':'')+(r||!h?r+'λ':'')};
+const span=e=>hm(e.start)+(e.end?'–'+(dayOf(e.end)!=dayOf(e.start)?e.end.slice(8,10)+'/'+e.end.slice(5,7)+' ':'')+hm(e.end):' (χωρίς λήξη)');
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const mob=/Android|iPhone/i.test(navigator.userAgent);
+let inst=LS.get('wl_inst',[]),log=LS.get('wl_log',[]),editId=null;
+const sel=new Set();
+
+/* ---------- εξοπλισμός από Excel ---------- */
+const fmtD=d=>{const x=new Date(d.getTime()+43200000);return P(x.getUTCDate())+'/'+P(x.getUTCMonth()+1)+'/'+x.getUTCFullYear()};
+function readInst(wb){
+  const out=[];
+  wb.SheetNames.forEach(n=>{
+    if(/διαστασ|stock|spare|αποθ/.test(norm(n)))return;
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:'',raw:true,blankrows:false});
+    let c=null;
+    rows.forEach(r=>{
+      const hs=r.map(norm);
+      if(hs.some(x=>/^εξοπλισμ/.test(x))&&hs.some(x=>/σειρ|serial/.test(x))){
+        const f=(re,not)=>hs.findIndex(x=>re.test(x)&&!(not&&not.test(x)));
+        c={type:f(/^εξοπλισμ/),sn:f(/σειρ|serial/),cust:f(/χωροσ|πελατ|customer|client/)};
+        return}
+      if(!c)return;
+      const v=i=>{const x=i>=0?r[i]:'';return x instanceof Date?fmtD(x):String(x??'').trim()};
+      if(!v(c.type)&&!v(c.sn))return;
+      out.push({man:n,type:v(c.type),sn:v(c.sn),cust:v(c.cust)});
+    });
+  });
+  return out;
+}
+function idbInst(){return new Promise(res=>{try{
+  const q=indexedDB.open('spareparts',1);
+  q.onupgradeneeded=()=>q.result.createObjectStore('kv');
+  q.onsuccess=()=>{try{const g=q.result.transaction('kv').objectStore('kv').get('i');g.onsuccess=()=>res((g.result&&g.result.data)||[]);g.onerror=()=>res([])}catch(e){res([])}};
+  q.onerror=()=>res([])}catch(e){res([])}})}
+function status(src){
+  $('#st').textContent=inst.length?'Εξοπλισμός: '+inst.length+' εγγραφές'+(src?' ('+src+')':'')+'. Μπορείτε και να πληκτρολογείτε ελεύθερα.':'Δεν έχει φορτωθεί εξοπλισμός. Φορτώστε το Excel ή πληκτρολογήστε ελεύθερα τα στοιχεία.';
+}
+$('#fi').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{inst=readInst(XLSX.read(ev.target.result,{type:'array',cellDates:true}));LS.set('wl_inst',inst);status(f.name);lists()}
+    catch(err){$('#st').textContent='Δεν ήταν δυνατή η ανάγνωση του αρχείου: '+err.message}
+  };
+  r.readAsArrayBuffer(f);e.target.value='';
+};
+
+/* ---------- λίστες επιλογής ---------- */
+const opt=x=>'<option value="'+esc(x)+'">';
+const uniq=a=>[...new Set(a.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'el'));
+const cust=()=>$('#cu').value.trim();
+function lists(){
+  const c=norm(cust()),e=norm($('#eq').value.trim());
+  const byC=c?inst.filter(r=>norm(r.cust)==c):[];
+  const base=byC.length?byC:inst;
+  const byE=e?base.filter(r=>norm(r.type)==e):[];
+  $('#dc').innerHTML=uniq(['Εταιρία',...inst.map(r=>r.cust)]).map(opt).join('');
+  $('#de').innerHTML=uniq(base.map(r=>r.type)).map(opt).join('');
+  $('#dsn').innerHTML=uniq((byE.length?byE:base).map(r=>r.sn)).map(opt).join('');
+}
+$('#cu').addEventListener('change',()=>{
+  const m=inst.filter(r=>norm(r.cust)==norm(cust()));
+  if(m.length){
+    const types=uniq(m.map(r=>r.type));
+    if(!types.includes($('#eq').value)){$('#eq').value='';$('#sn').value=''}
+    if(types.length==1)$('#eq').value=types[0];
+    if(m.length==1)$('#sn').value=m[0].sn;
+  }
+  lists();
+});
+$('#eq').addEventListener('change',()=>{
+  const m=inst.filter(r=>(!cust()||norm(r.cust)==norm(cust()))&&norm(r.type)==norm($('#eq').value));
+  if(m.length==1)$('#sn').value=m[0].sn;
+  lists();
+});
+$('#sn').addEventListener('change',()=>{
+  const m=inst.filter(r=>r.sn&&norm(r.sn)==norm($('#sn').value));
+  if(m.length==1){$('#cu').value=m[0].cust;$('#eq').value=m[0].type}
+  lists();
+});
+
+/* ---------- φόρμα ---------- */
+function durNote(){
+  const s=$('#st1').value,e=$('#en1').value;
+  if(!s||!e){$('#du').textContent='';return}
+  if(e<s){$('#du').textContent='Η λήξη είναι πριν την έναρξη.';return}
+  $('#du').textContent='Διάρκεια: '+dur(Math.round((new Date(e)-new Date(s))/60000));
+}
+['#st1','#en1'].forEach(s=>$(s).addEventListener('input',durNote));
+$('#n1').onclick=()=>{$('#st1').value=toL(new Date());durNote()};
+$('#n2').onclick=()=>{$('#en1').value=toL(new Date());durNote()};
+function resetForm(){
+  editId=null;
+  ['#cu','#eq','#sn','#dt','#ds','#en1'].forEach(s=>$(s).value='');
+  $('#kd').value='';$('#st1').value=toL(new Date());
+  $('#sv').textContent='Αποθήκευση';$('#ce').hidden=true;$('#ft').textContent='Νέα καταχώρηση';
+  lists();durNote();
+}
+$('#cl').onclick=()=>{resetForm();$('#msg').textContent=''};
+$('#ce').onclick=()=>{resetForm();$('#msg').textContent='Η επεξεργασία ακυρώθηκε.'};
+$('#sv').onclick=()=>{
+  const m=$('#msg'),c=cust(),kd=$('#kd').value,s=$('#st1').value,en=$('#en1').value;
+  m.style.color='var(--err)';
+  if(!c){m.textContent='Συμπληρώστε τον πελάτη.';return}
+  if(!kd){m.textContent='Επιλέξτε τύπο παρέμβασης.';return}
+  if(!s){m.textContent='Συμπληρώστε την έναρξη εργασίας.';return}
+  if(en&&en<s){m.textContent='Η λήξη είναι πριν την έναρξη.';return}
+  const e={id:editId||Date.now().toString(36)+Math.random().toString(36).slice(2,6),cust:c,equip:$('#eq').value.trim(),sn:$('#sn').value.trim(),dte:$('#dt').value.trim(),kind:kd,desc:$('#ds').value.trim(),start:s,end:en};
+  const i=log.findIndex(x=>x.id==e.id);
+  if(i>=0)log[i]=e;else log.push(e);
+  LS.set('wl_log',log);
+  const upd=i>=0;
+  resetForm();hist();
+  m.style.color='var(--acc)';m.textContent=upd?'Η καταχώρηση ενημερώθηκε.':'Η καταχώρηση αποθηκεύτηκε.';
+};
+function edit(id){
+  const e=log.find(x=>x.id==id);if(!e)return;
+  editId=id;
+  $('#cu').value=e.cust;$('#eq').value=e.equip;$('#sn').value=e.sn;$('#dt').value=e.dte;$('#kd').value=e.kind;
+  $('#ds').value=e.desc;$('#st1').value=e.start;$('#en1').value=e.end;
+  $('#sv').textContent='Ενημέρωση';$('#ce').hidden=false;$('#ft').textContent='Επεξεργασία καταχώρησης';
+  $('#msg').textContent='';
+  lists();durNote();setTab(1);window.scrollTo(0,0);
+}
+
+/* ---------- ιστορικό ---------- */
+function visible(){
+  const f=$('#hf').value,t=$('#ht').value,q=norm($('#hq').value).split(/\s+/).filter(Boolean);
+  return log.filter(e=>(!f||dayOf(e.start)>=f)&&(!t||dayOf(e.start)<=t)&&q.every(w=>norm([e.cust,e.equip,e.sn,e.dte,e.kind,e.desc].join(' ')).includes(w)));
+}
+const byStart=(a,b)=>a.start<b.start?-1:a.start>b.start?1:0;
+function groupDays(rows){
+  const g={};rows.slice().sort(byStart).forEach(e=>(g[dayOf(e.start)]=g[dayOf(e.start)]||[]).push(e));
+  return g;
+}
+function hist(){
+  const rows=visible(),g=groupDays(rows),days=Object.keys(g).sort().reverse();
+  [...sel].forEach(id=>{if(!log.some(x=>x.id==id))sel.delete(id)});
+  $('#t2').textContent='Ιστορικό ('+log.length+')';
+  if(!days.length){$('#hl').innerHTML='<div class="empty">'+(log.length?'Καμία καταχώρηση με αυτά τα φίλτρα.':'Δεν υπάρχουν καταχωρήσεις ακόμη.')+'</div>'}
+  else $('#hl').innerHTML=days.map(k=>{
+    const es=g[k],all=es.every(e=>sel.has(e.id)),tot=es.reduce((a,e)=>a+(mins(e)||0),0);
+    return `<div class="day"><label><input type="checkbox" data-day="${k}" ${all?'checked':''}> ${esc(fmtDay(k))}</label><span class="mute">${es.length} · ${dur(tot)||'0λ'}</span></div>`+
+    es.map(e=>`<div class="en"><input type="checkbox" data-id="${e.id}" ${sel.has(e.id)?'checked':''} aria-label="Επιλογή"><div>
+      <div class="t">${esc(span(e))}${mins(e)!=null?' · '+dur(mins(e)):''} · ${esc(e.cust)}</div>
+      <div class="mute">${[e.equip,e.sn&&'ΑΣ '+e.sn,e.dte&&'ΔΤΕ '+e.dte,e.kind].filter(Boolean).map(esc).join(' · ')}</div>
+      ${e.desc?`<div class="d">${esc(e.desc)}</div>`:''}</div>
+      <div class="ac"><button data-e="${e.id}" aria-label="Επεξεργασία">✎</button><button data-x="${e.id}" aria-label="Διαγραφή">✕</button></div></div>`).join('');
+  }).join('');
+  $('#sc').textContent='Επιλεγμένες: '+sel.size;
+}
+$('#hl').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.id){t.checked?sel.add(t.dataset.id):sel.delete(t.dataset.id)}
+  else if(t.dataset.day){visible().filter(x=>dayOf(x.start)==t.dataset.day).forEach(x=>t.checked?sel.add(x.id):sel.delete(x.id))}
+  hist();
+});
+$('#hl').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.e)edit(b.dataset.e);
+  if(b.dataset.x&&confirm('Διαγραφή αυτής της καταχώρησης;')){log=log.filter(x=>x.id!=b.dataset.x);sel.delete(b.dataset.x);LS.set('wl_log',log);hist()}
+});
+$('#sa').onclick=()=>{visible().forEach(e=>sel.add(e.id));hist()};
+$('#sn0').onclick=()=>{sel.clear();hist()};
+['#hf','#ht','#hq'].forEach(s=>$(s).addEventListener('input',hist));
+
+/* ---------- email ---------- */
+function build(){
+  const m=$('#msg2');m.style.color='var(--err)';
+  const rows=log.filter(e=>sel.has(e.id));
+  if(!rows.length){m.textContent='Επιλέξτε τουλάχιστον μία καταχώρηση.';return null}
+  m.textContent='';m.style.color='var(--acc)';
+  LS.set('wl_to',$('#to').value);LS.set('wl_nm',$('#nm').value);LS.set('wl_ol',$('#ol').value);
+  const g=groupDays(rows),days=Object.keys(g).sort();
+  const range=days.length>1?dmy(days[0])+' – '+dmy(days[days.length-1]):dmy(days[0]);
+  const L=[(new Date().getHours()<12?'Καλημέρα':'Καλησπέρα')+' σας,','','Αναφορά εργασιών: '+range,''];
+  let all=0;
+  days.forEach(k=>{
+    L.push(fmtDay(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase());
+    let tot=0;
+    g[k].forEach(e=>{
+      const mn=mins(e);tot+=mn||0;
+      L.push(span(e)+(mn!=null?' ('+dur(mn)+')':'')+'  '+e.cust);
+      const eq=[e.equip,e.sn&&'ΑΣ: '+e.sn,e.dte&&'Αρ. ΔΤΕ: '+e.dte].filter(Boolean).join(' | ');
+      if(eq)L.push('   Εξοπλισμός: '+eq);
+      L.push('   Τύπος παρέμβασης: '+e.kind);
+      if(e.desc)L.push('   Περιγραφή: '+e.desc.replace(/\r?\n/g,' '));
+      L.push('');
+    });
+    all+=tot;
+    L.push('Σύνολο ημέρας: '+(dur(tot)||'0λ'),'');
+  });
+  if(days.length>1)L.push('Συνολικός χρόνος: '+(dur(all)||'0λ'),'');
+  L.push('Ευχαριστώ.');
+  if($('#nm').value.trim())L.push($('#nm').value.trim());
+  return {subject:'Αναφορά εργασιών: '+range,body:L.join('\r\n')};
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}
+  catch(e){try{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();const ok=document.execCommand('copy');a.remove();return ok}catch(e2){return false}}
+}
+$('#cp').onclick=async()=>{
+  const x=build();if(!x)return;
+  const t='Θέμα: '+x.subject+'\r\n\r\n'+x.body;
+  if(await copyText(t))$('#msg2').textContent='Το κείμενο αντιγράφηκε. Επικολλήστε το σε νέο μήνυμα.';
+  else{$('#pv').value=t;$('#pv').hidden=false;$('#pv').select();$('#msg2').textContent='Επιλέξτε το κείμενο παρακάτω (Ctrl+A, Ctrl+C).'}
+};
+$('#sh').onclick=async()=>{
+  const x=build();if(!x)return;
+  if(navigator.share){try{await navigator.share({title:x.subject,text:x.body})}catch(e){if(e.name!='AbortError')$('#msg2').textContent='Η κοινοποίηση απέτυχε.'}}
+  else{$('#cp').click()}
+};
+$('#em').onclick=async()=>{
+  const x=build();if(!x)return;
+  const to=$('#to').value.trim();
+  if($('#ol').value=='n'){
+    let url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(to)+'&subject='+encodeURIComponent(x.subject)+'&body='+encodeURIComponent(x.body);
+    let note='Ανοίχτηκε νέο μήνυμα στο Outlook web.';
+    if(url.length>6000){
+      const ok=await copyText(x.body);
+      url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(to)+'&subject='+encodeURIComponent(x.subject);
+      note=ok?'Το κείμενο είναι μεγάλο: αντιγράφηκε. Επικολλήστε το (Ctrl+V) στο μήνυμα.':'Το κείμενο είναι μεγάλο. Χρησιμοποιήστε «Αντιγραφή κειμένου».';
+    }
+    window.open(url,'_blank');$('#msg2').textContent=note;return;
+  }
+  const b64=s=>btoa(unescape(encodeURIComponent(s))),wrap=s=>s.replace(/(.{76})/g,'$1\r\n');
+  const eml=['X-Unsent: 1','To: '+to,'Subject: =?UTF-8?B?'+b64(x.subject)+'?=','MIME-Version: 1.0','Content-Type: text/plain; charset=utf-8','Content-Transfer-Encoding: base64','',wrap(b64(x.body))].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([eml],{type:'message/rfc822'}));a.download='anafora-ergasion.eml';a.click();
+  $('#msg2').textContent='Κατέβηκε το προσχέδιο. Ανοίξτε το με διπλό κλικ στο Outlook και στείλτε το.';
+};
+
+/* ---------- αντίγραφο ασφαλείας ---------- */
+$('#bk').onclick=()=>{
+  const m=$('#msg3');
+  if(!log.length){m.style.color='var(--err)';m.textContent='Δεν υπάρχουν καταχωρήσεις για αντίγραφο.';return}
+  const blob=new Blob([JSON.stringify({app:'worklog',version:1,exported:new Date().toISOString(),entries:log},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='worklog-backup-'+toL(new Date()).slice(0,10)+'.json';a.click();
+  m.style.color='var(--acc)';m.textContent='Το αντίγραφο ('+log.length+' καταχωρήσεις) κατέβηκε.';
+};
+$('#rs').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const m=$('#msg3'),r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result),arr=Array.isArray(d)?d:d.entries;
+      if(!Array.isArray(arr))throw new Error('μη έγκυρο αρχείο');
+      const ok=arr.filter(x=>x&&x.id&&x.cust&&x.kind&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(x.start||''));
+      let added=0,updated=0;
+      ok.forEach(x=>{
+        const e={id:String(x.id),cust:String(x.cust),equip:String(x.equip||''),sn:String(x.sn||''),dte:String(x.dte||''),kind:String(x.kind),desc:String(x.desc||''),start:x.start,end:/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(x.end||'')?x.end:''};
+        const i=log.findIndex(y=>y.id==e.id);
+        if(i>=0){log[i]=e;updated++}else{log.push(e);added++}
+      });
+      LS.set('wl_log',log);hist();
+      m.style.color='var(--acc)';m.textContent='Επαναφορά: '+added+' νέες, '+updated+' ενημερωμένες'+(arr.length-ok.length?', '+(arr.length-ok.length)+' αγνοήθηκαν':'')+'.';
+    }catch(err){m.style.color='var(--err)';m.textContent='Δεν ήταν δυνατή η επαναφορά: '+err.message}
+  };
+  r.readAsText(f);e.target.value='';
+};
+
+/* ---------- καρτέλες & εκκίνηση ---------- */
+function setTab(n){
+  $('#v1').hidden=n!=1;$('#v2').hidden=n!=2;
+  $('#t1').classList.toggle('on',n==1);$('#t2').classList.toggle('on',n==2);
+  if(n==2)hist();
+}
+$('#t1').onclick=()=>setTab(1);$('#t2').onclick=()=>setTab(2);
+$('#to').value=LS.get('wl_to','');$('#nm').value=LS.get('wl_nm','');
+$('#ol').value=LS.get('wl_ol',mob?'n':'c');
+(async()=>{
+  let src='';
+  if(!inst.length){const d=await idbInst();if(d.length){inst=d.map(({man,type,sn,cust})=>({man,type,sn,cust}));LS.set('wl_inst',inst);src='από την εφαρμογή ανταλλακτικών'}}
+  status(src);resetForm();hist();
+})();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
